@@ -1,0 +1,131 @@
+{% extends 'nav.html' %}
+
+{% block content %}
+<h1 class="text-center">Clientes</h1>
+
+<form method="POST" class="mt-4" id="cliente-form" onsubmit="return validarFormulario()"> <!-- Usar método POST para editar o agregar -->
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <!-- Campo para DNI -->
+    <div class="form-group">
+        <label for="dni">DNI</label>
+        <input type="text" class="form-control" id="dni" name="dni" placeholder="Ingrese el DNI" 
+               value="{{ form.dni.value }}" pattern="\d{8}" title="El DNI debe ser un número de 8 dígitos" required>
+        <small id="dni-error" class="text-danger"></small>
+    </div>
+    
+    <!-- Campo para Nombre -->
+    <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ingrese el nombre" 
+               value="{{ form.nombre.value }}" required maxlength="50" oninput="limitarCaracteres(this, 50)">
+        <!-- Se establece el límite de caracteres a 50 -->
+    </div>
+    
+    <!-- Campo para Dirección -->
+    <div class="form-group">
+        <label for="direccion">Dirección</label>
+        <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Ingrese la dirección" 
+               value="{{ form.direccion.value }}" required maxlength="100" oninput="limitarCaracteres(this, 100)">
+        <!-- Se establece el límite de caracteres a 100 -->
+    </div>
+    
+    <!-- Campo para Teléfono -->
+    <div class="form-group">
+        <label for="telefono">Teléfono</label>
+        <input type="text" class="form-control" id="telefono" name="telefono" placeholder="Ingrese el teléfono" 
+            value="{{ form.telefono.value }}" pattern="\d{9}" title="El teléfono debe ser un número de 9 dígitos" required>
+        <small id="telefono-error" class="text-danger"></small>
+    </div>
+    
+    <!-- Campo para Correo Electrónico -->
+    <div class="form-group">
+        <label for="correo">Correo Electrónico</label>
+        <input type="email" class="form-control" id="correo" name="correo" placeholder="Ingrese el correo electrónico" 
+               value="{{ form.correo.value }}" required maxlength="100" oninput="limitarCaracteres(this, 100)">
+        <!-- Se establece el límite de caracteres a 100 -->
+    </div>
+
+    <!-- Botones diferentes según el modo -->
+    {% if editar_cliente %}  <!-- Si estamos editando -->
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <a href="{% url 'clientes' %}" class="btn btn-secondary">Cancelar</a>  <!-- Botón para cancelar -->
+    {% else %}  <!-- Si estamos agregando -->
+        <button type="submit" class="btn btn-primary">Registrar Cliente</button>
+    {% endif %}
+</form>
+
+<!-- Tabla para mostrar clientes -->
+<h2 class="mt-4">Lista de Clientes</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>DNI</th>
+            <th>Nombre</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+            <th>Correo Electrónico</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cliente in clientes %}  <!-- Mostrar la lista de clientes -->
+        <tr>
+            <td>{{ cliente.dni }}</td>
+            <td>{{ cliente.nombre }}</td>
+            <td>{{ cliente.direccion }}</td>
+            <td>{{ cliente.telefono }}</td>
+            <td>{{ cliente.correo }}</td>
+            <td>
+                <a href="{% url 'editar_cliente' cliente.id %}" class="btn btn-sm btn-warning">Editar</a>
+                <a href="{% url 'eliminar_cliente' cliente.id %}" class="btn btn-sm btn-danger"
+                   onclick="return confirm('¿Estás seguro de que quieres eliminar este cliente?')">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    function validarFormulario() {
+        const dni = document.getElementById('dni').value.trim();
+        const nombre = document.getElementById('nombre').value.trim();
+        const direccion = document.getElementById('direccion').value.trim();
+        const telefono = document.getElementById('telefono').value.trim();
+        const correo = document.getElementById('correo').value.trim();
+
+        const patronDNI = /^\d{8}$/;
+        const patronTelefono = /^\d{9}$/;
+        const patronCorreo = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        if (dni === "" || nombre === "" || direccion === "" || telefono === "" || correo === "") {
+            alert('Todos los campos son obligatorios.');
+            return false;
+        }
+
+        if (!patronDNI.test(dni)) {
+            alert('El DNI debe ser un número de 8 dígitos.');
+            return false;
+        }
+
+        if (!patronTelefono.test(telefono)) {
+            alert('El teléfono debe ser un número de 9 dígitos.');
+            return false;
+        }
+
+        if (!patronCorreo.test(correo)) {
+            alert('Debe ser un correo electrónico válido.');
+            return false;
+        }
+
+        return true;
+    }
+
+    function limitarCaracteres(input, maxLength) {
+        if (input.value.length > maxLength) {
+            input.value = input.value.slice(0, maxLength);
+        }
+    }
+</script>
+{% endblock %}

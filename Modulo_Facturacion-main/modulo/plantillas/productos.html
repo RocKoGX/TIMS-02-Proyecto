@@ -1,0 +1,101 @@
+{% extends 'nav.html' %}
+
+{% block content %}
+<h1>Gestión de Productos</h1>
+<p>Aquí puedes agregar, editar y eliminar productos o servicios, así como establecer precios y categorías.</p>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Crear producto</h2>
+            <form method="POST" class="mt-4" onsubmit="return validarFormulario()">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                <div class="form-group">
+                    <label for="productCodigo">Código del producto</label>
+                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ingresa el código del producto"
+                           value="{{ form.codigo.value }}" pattern="\d+" title="Solo se permiten números" onblur="autocompletarProducto()" required>
+                </div>
+                <div class="form-group">
+                    <label for="productName">Nombre del producto</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ingresa el nombre del producto"
+                           value="{{ form.nombre.value }}" required maxlength="50">
+                    <!-- Se establece el límite de caracteres a 50 -->
+                </div>
+                <div class="form-group">
+                    <label for="productPrice">Precio del producto</label>
+                    <input type="text" class="form-control" id="precio" name="precio" placeholder="Ingresa el precio del producto"
+                           value="{{ form.precio.value }}" required oninput="limitarCaracteres(this, 6)">
+                    <!-- Se establece el límite de caracteres a 10 -->
+                </div>
+                <div class="form-group">
+                    <label for="productStock">Stock del producto</label>
+                    <input type="text" class="form-control" id="stock" name="stock" placeholder="Ingresa el stock del producto"
+                           value="{{ form.stock.value }}" required oninput="limitarCaracteres(this, 6)">
+                    <!-- Se establece el límite de caracteres a 10 -->
+                </div>
+                {% if editar_producto %}
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <a href="{% url 'productos' %}" class="btn btn-secondary">Cancelar</a>
+                {% else %}
+                <button type="submit" class="btn btn-primary">Crear</button>
+                {% endif %}
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h2>Editar/Eliminar Productos</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr>
+                        <td scope="row">{{ producto.codigo }}</td>
+                        <td scope="row">{{ producto.nombre }}</td>
+                        <td scope="row">{{ producto.precio }}</td>
+                        <td scope="row">
+                            <a href="{% url 'editar_producto' producto.id %}" class="btn btn-primary">Editar</a>
+                            <a href="{% url 'eliminar_producto' producto.id %}" class="btn btn-danger"
+                               onclick="return confirm('¿Estás seguro de que quieres eliminar este cliente?')">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function validarFormulario() {
+    const codigo = document.getElementById('codigo').value;
+    const nombre = document.getElementById('nombre').value;
+    const precio = document.getElementById('precio').value;
+    const stock = document.getElementById('stock').value;
+    const patronNumeros = /^\d+$/;
+
+    if (!patronNumeros.test(codigo)) {
+        alert('El código del producto solo puede contener números.');
+        return false;
+    }
+
+    if (codigo.trim() === "" || nombre.trim() === "" || precio.trim() === "" || stock.trim() === "") {
+        alert('Todos los campos son obligatorios.');
+        return false;
+    }
+
+    return true;
+}
+
+function limitarCaracteres(input, maxLength) {
+    if (input.value.length > maxLength) {
+        input.value = input.value.slice(0, maxLength);
+    }
+}
+</script>
+{% endblock %}

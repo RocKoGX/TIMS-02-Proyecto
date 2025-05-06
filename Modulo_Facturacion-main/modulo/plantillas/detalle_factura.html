@@ -1,0 +1,33 @@
+{% extends 'nav.html' %}
+
+{% block content %}
+<h1>Detalle de Factura</h1>
+<p>En esta sección se muestra el detalle de la factura seleccionada.</p>
+<h2 class="mt-4">Factura # {{factura.id}} </h2>
+<p><strong>Fecha: </strong>{{factura.fecha}}</p>
+<p><strong>Cliente: </strong>{{factura.cliente}}</p>
+<p><strong>Subtotal: </strong>{{factura.subtotal}}</p>
+<p><strong>IGV (18%): </strong>{{factura.igv}}</p>
+<p><strong>Total: </strong>{{factura.total}}</p>
+<h2 class="mt-4">Detalle de la Factura</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Producto/Servicio</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    {% for producto in productos %}
+    <tbody>
+        <tr>
+            <td>{{producto.nombre}}</td>
+            <td>{{producto.cantidad}}</td>
+            <td>{{producto.precio}}</td>
+            <td>{{producto.subtotal}}</td>
+        </tr>
+    </tbody>
+    {% endfor %}
+</table>
+{% endblock %}

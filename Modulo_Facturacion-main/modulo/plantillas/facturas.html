@@ -1,0 +1,37 @@
+{% extends 'nav.html' %}
+
+{% block content %}
+<!-- Tabla para mostrar facturas -->
+<h2 class="mt-4">Lista de Facturas</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Número de Factura</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Subtotal</th>
+            <th>IGV (18%)</th>
+            <th>Total</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for factura in facturas %}  <!-- Mostrar la lista de facturas -->
+        <tr>
+            <td>{{ factura.id }}</td>
+            <td>{{ factura.fecha }}</td>
+            <td>{{ factura.cliente }}</td>
+            <td>{{ factura.subtotal }}</td>
+            <td>{{ factura.igv }}</td>
+            <td>{{ factura.total }}</td>
+            <td>
+                <a href="{% url 'detalle_factura' factura.id %}">Ver Detalle</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+

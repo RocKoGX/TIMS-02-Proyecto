@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Modulo de Facturación</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">  <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">  <!-- Fuente personalizada -->
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;  /* fuente */
+        }
+
+        .navbar {
+            background-color: #5161ce;  /* Fondo del navbar */
+        }
+
+        .navbar .navbar-brand {
+            color: white;  /* Color de la marca */
+        }
+
+        .navbar .nav-link {
+            color: rgba(255, 255, 255, 0.7);  /* Color de los enlaces */
+            padding: 15px;  /* Espaciado */
+        }
+
+        /* Al pasar el cursor */
+        .nav-item:hover {
+            background-color: #ffcc00;
+            border-radius: 10px;  /* Bordes  */
+            transition: background-color 0.3s;
+        }
+
+        .nav-item:hover .nav-link {
+            color: black;  /* Color del texto pasar el cursor */
+        }
+
+        /* Clase para el elemento activo */
+        .nav-item.active {
+            background-color: #ffcc00;  /* Recuadro amarillo para el elemento activo */
+            border-radius: 10px;
+        }
+
+        .nav-item.active .nav-link {
+            color: black;  /* Texto negro para el elemento activo */
+        }
+
+        /* Cambios para el botón de colapso */
+        .navbar-toggler {
+            background-color: white;  /* Botón de colapso blanco */
+            border-color: white;  /* Borde blanco */
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22currentColor%22%20class%3D%22bi%20bi-menu-button%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M0%201.5A1.5%201.5%200%200%201%201.5%200h8A1.5%201.5%200%200%201%2011%201.5v2A1.5%201.5%200%200%209.5%205h-8A1.5%201.5%200%200%201%200%203.5zM1.5%201a.5.5%200%200%200-.5.5v2a.5.5%200%200%200%20.5.5h8a.5.5%200%200%200%20.5-.5v-2a.5.5%200%200%200-.5-.5%22%3E%3Cpath%20d%3D%22m7.823%202.823-.396-.396A.25.25%200%200%201%207.604%202h.792a.25.25%200%200%201%20.177.427l-.396.396a.25.25%200%200%20.%20354%200%22%2F%3E%3Cpath%20d%3D%22M0%208a2%202%200%200%201%202-2h12a2%202%200%200%201%202%202v5a2%202%200%200%201-2%202H2a2%202%200%200%201-2-2zm1%203v2a1%201%200%200%200%201%201h12a1%201%200%200%201%201-1v-2zm14-1V8a1%201%200%200%200-1-1H2a1%201%200%200%200-1%201v2zM2%208.5a.5%20.a.5%20%200%200%200%20.5%20-.5%20.%20%201%20h-9%20m%204%20a%20%20.%20%200%20%200%%20a%20%20%20%22%3E%3C%2Fsvg%3E");  /* Icono del navbar-toggler en blanco */
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-expand-lg navbar-mainbg">
+        <a class="navbar-brand" href="{% url 'facturacion' %}">Modulo de Facturación</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span> <!-- Icono  -->
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'facturacion' %}">Facturación</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'productos' %}">Productos/Servicios</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'busqueda' %}">Búsqueda</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'empresa' %}">Empresa</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'clientes' %}">Clientes</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido -->
+    <div class="container mt-4">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>
