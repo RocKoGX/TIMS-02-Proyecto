@@ -21,4 +21,5 @@ from django.urls import path, include
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('modulo/', include('modulo.urls')),
+    path('', include('modulo.urls')),  # Esto debería estar para redirigir al módulo
 ]
