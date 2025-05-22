@@ -37,6 +37,14 @@
 
 <script>
 function validarFormulario() {
+const imagen = document.getElementById('imagen');
+if (imagen.value) {
+    const ext = imagen.value.split('.').pop().toLowerCase();
+    if (!['jpg', 'jpeg', 'png'].includes(ext)) {
+        alert('La imagen debe ser en formato JPG o PNG.');
+        return false;
+    }
+}
     const nombre = document.getElementById('nombre').value.trim();
     const ruc = document.getElementById('ruc').value.trim();
     const direccion = document.getElementById('direccion').value.trim();

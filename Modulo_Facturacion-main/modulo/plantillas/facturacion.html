@@ -104,7 +104,10 @@
     document.getElementById("ruc_empresa").innerText = "{{ empresa.ruc }}";
     document.getElementById("direccion_empresa").innerText = "{{ empresa.direccion }}";
     document.getElementById("telefono_empresa").innerText = "{{ empresa.telefono }}";
+    {% if empresa.imagen %}
     document.getElementById("imagen_empresa").src = "{{ empresa.imagen.url }}";
+    {% endif %}
+
 
     function buscarClientePorDNI(dni) {
         fetch('', {
@@ -195,6 +198,11 @@
 
     // Función para generar la factura en formato HTML
     function guardarFactura() {
+        var total = parseFloat(document.getElementById("total_pagar").innerText);
+        if (isNaN(total) || total <= 0) {
+            alert("No se puede generar una factura con total cero.");
+            return;
+        }
         var cliente = obtenerDatosCliente();
         console.log(cliente);
         var productos = obtenerProductos();
@@ -275,21 +283,35 @@
         };
     }    
 
-    function obtenerProductos() {
-        var productos = [];
-        var filas = document.querySelectorAll("#productosTable tbody tr");
-        filas.forEach(function(fila) {
-            var producto = {
-                codigo: fila.querySelector(".codigo_producto").value,
-                nombre: fila.querySelector(".nombre_producto").value,
-                precio_unitario: parseFloat(fila.querySelector(".precio_unitario").value),
-                cantidad: parseInt(fila.querySelector(".cantidad_producto").value),
-                subtotal: parseFloat(fila.querySelector(".subtotal_producto").value)
-            };
-            productos.push(producto);
-        });
-        return productos;
+function obtenerProductos() {
+    var productos = [];
+    var filas = document.querySelectorAll("#productosTable tbody tr");
+    
+    filas.forEach(function(fila) {
+        var producto = {
+            codigo: fila.querySelector(".codigo_producto").value,
+            nombre: fila.querySelector(".nombre_producto").value,
+            precio_unitario: parseFloat(fila.querySelector(".precio_unitario").value),
+            cantidad: parseInt(fila.querySelector(".cantidad_producto").value),
+            subtotal: parseFloat(fila.querySelector(".subtotal_producto").value)
+        };
+
+        if (producto.cantidad <= 0 || isNaN(producto.cantidad)) {
+            alert("Todas las cantidades deben ser mayores a 0.");
+            throw new Error("Cantidad inválida.");
+        }
+
+        productos.push(producto);
+    });
+
+    if (productos.length === 0) {
+        alert("Debe ingresar al menos un producto.");
+        throw new Error("Factura sin productos.");
     }
+
+    return productos;
+}
+
 
     function obtenerDatosExtra() {
         return {

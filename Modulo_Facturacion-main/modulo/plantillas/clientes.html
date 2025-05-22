@@ -105,17 +105,17 @@
         }
 
         if (!patronDNI.test(dni)) {
-            alert('El DNI debe ser un número de 8 dígitos.');
+            alert('El DNI debe contener exactamente 8 dígitos numéricos.');
             return false;
         }
 
         if (!patronTelefono.test(telefono)) {
-            alert('El teléfono debe ser un número de 9 dígitos.');
+            alert('El teléfono debe contener exactamente 9 dígitos numéricos.');
             return false;
         }
 
         if (!patronCorreo.test(correo)) {
-            alert('Debe ser un correo electrónico válido.');
+            alert('Ingrese un correo electrónico válido.');
             return false;
         }
 

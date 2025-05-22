@@ -73,19 +73,28 @@
 
 <script>
 function validarFormulario() {
-    const codigo = document.getElementById('codigo').value;
-    const nombre = document.getElementById('nombre').value;
-    const precio = document.getElementById('precio').value;
-    const stock = document.getElementById('stock').value;
-    const patronNumeros = /^\d+$/;
+    const codigo = document.getElementById('codigo').value.trim();
+    const nombre = document.getElementById('nombre').value.trim();
+    const precio = parseFloat(document.getElementById('precio').value.trim());
+    const stock = parseInt(document.getElementById('stock').value.trim());
 
-    if (!patronNumeros.test(codigo)) {
-        alert('El código del producto solo puede contener números.');
+    if (!/^\d+$/.test(codigo)) {
+        alert('El código del producto solo debe contener números.');
         return false;
     }
 
-    if (codigo.trim() === "" || nombre.trim() === "" || precio.trim() === "" || stock.trim() === "") {
+    if (codigo === "" || nombre === "" || isNaN(precio) || isNaN(stock)) {
         alert('Todos los campos son obligatorios.');
+        return false;
+    }
+
+    if (precio <= 0 || precio > 10000) {
+        alert('El precio debe ser mayor a 0 y menor a 10,000.');
+        return false;
+    }
+
+    if (stock <= 0 || stock > 1000) {
+        alert('El stock debe ser mayor a 0 y menor o igual a 1000.');
         return false;
     }
 

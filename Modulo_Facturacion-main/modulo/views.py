@@ -240,34 +240,42 @@ def eliminar_producto(request, id):
 
 @csrf_exempt
 def guardar_factura(request):
-    print("Ingreso a guardar_factura")
     if request.method == 'POST':
-        print("Ingreso al primer if")
         body_unicode = request.body.decode('utf-8')
         body_data = json.loads(body_unicode)
-        print(body_data)
 
         cliente_id = body_data.get('cliente').get('dni')
-        subtotal = body_data.get('extraData').get('subtotal')
-        igv = body_data.get('extraData').get('impuesto_igv')
-        total = body_data.get('extraData').get('total_pagar')
-        if cliente_id:
-            print("Ingreso al iegundo if")
-            try:
-                cliente_data = Cliente.objects.get(dni=cliente_id)
-                factura = Factura(cliente=cliente_data)
-                factura.subtotal = subtotal
-                factura.igv = igv
-                factura.total = total
-                print("insertando igv de: ",factura.igv, "deberia ser: ", igv)
-                factura.save()
-                for producto_data in body_data.get('productos'):
-                    producto = Producto.objects.get(codigo=producto_data.get('codigo'))
-                    print(producto)
-                    FacturaProducto.objects.create(factura=factura, producto=producto, cantidad=producto_data.get('cantidad'), subtotal=producto_data.get('subtotal'))
-                    #factura.productos.add(producto)
-                return JsonResponse({'numero_factura': factura.id})
-            except Cliente.DoesNotExist:
-                return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
-        else:
-            return JsonResponse({'error': 'No se proporcionó cliente'}, status=400)
+        subtotal = float(body_data.get('extraData').get('subtotal', 0))
+        igv = float(body_data.get('extraData').get('impuesto_igv', 0))
+        total = float(body_data.get('extraData').get('total_pagar', 0))
+
+        # Validar montos
+        if subtotal <= 0 or total <= 0:
+            return JsonResponse({'error': 'Los montos de la factura deben ser mayores a 0.'}, status=400)
+
+        try:
+            cliente_data = Cliente.objects.get(dni=cliente_id)
+        except Cliente.DoesNotExist:
+            return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
+
+        factura = Factura(cliente=cliente_data, subtotal=subtotal, igv=igv, total=total)
+        factura.save()
+
+        for producto_data in body_data.get('productos'):
+            producto = Producto.objects.get(codigo=producto_data.get('codigo'))
+            cantidad = int(producto_data.get('cantidad'))
+            subtotal_producto = float(producto_data.get('subtotal'))
+
+            if cantidad <= 0 or subtotal_producto <= 0:
+                return JsonResponse({'error': 'Cantidad o subtotal inválido en los productos'}, status=400)
+
+            FacturaProducto.objects.create(
+                factura=factura,
+                producto=producto,
+                cantidad=cantidad,
+                subtotal=subtotal_producto
+            )
+
+        return JsonResponse({'numero_factura': factura.id})
+    else:
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
