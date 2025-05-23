@@ -6,6 +6,7 @@ from .forms import ClienteForm, EmpresaForm, ProductoForm  # Importar el formula
 
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib import messages
 
 
 def facturacion_view(request):
@@ -121,7 +122,15 @@ def empresa_view(request):
     empresa = Empresa.objects.first()
 
     if request.method == "POST":
-        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+        # Si ya existe empresa, editarla
+        if empresa:
+            form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+        else:
+            # Si no existe empresa, validar que no haya ninguna antes de crear
+            if Empresa.objects.exists():
+                messages.error(request, "Ya existe una empresa registrada. No se puede crear otra.")
+                return redirect('empresa')
+            form = EmpresaForm(request.POST, request.FILES)
         if form.is_valid():
             empresa = form.save(commit=False)
             if 'imagen' in request.FILES:
@@ -131,10 +140,10 @@ def empresa_view(request):
             empresa.direccion = form.cleaned_data['direccion']
             empresa.telefono = form.cleaned_data['telefono']
             empresa.save()
-            print("Empresa Guardada/Actualizada correctamente")
+            messages.success(request, "Empresa actualizada correctamente.")
             return redirect('empresa')
         else:
-            print("Errores de validación:", form.errors)
+            messages.error(request, "Error al actualizar la empresa. Por favor revise los datos.")
     else:
         form = EmpresaForm(instance=empresa)
 
@@ -163,24 +172,29 @@ def clientes_view(request):
     })
 
 def editar_cliente(request, id):
-    cliente = get_object_or_404(Cliente, id=id)  # Obtener el cliente por ID
-    if request.method == "POST":  # Si se envía el formulario
-        form = ClienteForm(request.POST, instance=cliente)  # Formulario pre-rellenado
-        if form.is_valid():  # Si el formulario es válido
-            form.save()  # Guardar cambios
-            return redirect('clientes')  # Redirigir a la lista de clientes
-    else:  # Si es GET, mostrar el formulario con datos existentes
+    try:
+        cliente = Cliente.objects.get(id=id)
+    except Cliente.DoesNotExist:
+        messages.error(request, "El cliente que intenta editar no existe.")
+        return redirect('clientes')  # Redirige si no existe el cliente
+
+    if request.method == "POST":
+        form = ClienteForm(request.POST, instance=cliente)
+        if form.is_valid():
+            form.save()
+            return redirect('clientes')
+    else:
         form = ClienteForm(instance=cliente)
-        # Deshabilitar ciertos campos
         form.fields['dni'].widget.attrs['readonly'] = True
         form.fields['nombre'].widget.attrs['readonly'] = True
 
-    # Añadir a los datos de contexto información adicional
     return render(request, 'clientes.html', {
-        'form': form,  # Formulario para editar cliente
-        'clientes': Cliente.objects.all(),  # Lista de clientes para mostrar
-        'editar_cliente': True  # Bandera para mostrar botones adicionales
+        'form': form,
+        'clientes': Cliente.objects.all(),
+        'editar_cliente': True
     })
+
+
 
 def eliminar_cliente(request, id):
     cliente = get_object_or_404(Cliente, id=id)  # Obtener el cliente o mostrar 404 si no se encuentra
@@ -188,7 +202,12 @@ def eliminar_cliente(request, id):
     return redirect('clientes')  # Redirigir a la lista de clientes
 
 def editar_producto(request, id):
-    producto = get_object_or_404(Producto, id=id)
+    try:
+        producto = Producto.objects.get(id=id)
+    except Producto.DoesNotExist:
+        messages.error(request, "El producto que intenta editar no existe.")
+        return redirect('productos')
+
     if request.method == "POST":
         form = ProductoForm(request.POST, instance=producto)
         if form.is_valid():
@@ -197,7 +216,6 @@ def editar_producto(request, id):
     else:
         form = ProductoForm(instance=producto)
 
-    # Obtener todos los productos para mostrar en la tabla
     productos = Producto.objects.all()
 
     return render(request, 'productos.html', {
@@ -241,6 +259,9 @@ def eliminar_producto(request, id):
 @csrf_exempt
 def guardar_factura(request):
     if request.method == 'POST':
+        empresa = Empresa.objects.first()
+        if not empresa:
+            return JsonResponse({'error': 'No se puede crear factura porque no hay empresa registrada.'}, status=400)
         body_unicode = request.body.decode('utf-8')
         body_data = json.loads(body_unicode)
 

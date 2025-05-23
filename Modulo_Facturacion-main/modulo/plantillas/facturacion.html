@@ -1,6 +1,11 @@
 {% extends 'nav.html' %}
 
 {% block content %}
+{% if empresa.imagen %}
+{% else %}
+    <p>No hay imagen disponible</p>
+{% endif %}
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <h1>¡Bienvenido a la página de facturación!</h1>
 <p>Aquí puedes crear y gestionar facturas.</p>
@@ -17,10 +22,12 @@
             <!-- Campo para DNI -->
             <div class="form-group">
                 <label for="dni">DNI</label>
-                <input type="text" class="form-control" name="dni" id="dni" 
-                       placeholder="Ingrese el DNI del cliente"
-                       required onchange="validarDNI(this.value)">
+                <input type="text" class="form-control" name="dni" id="dni"
+                    placeholder="Ingrese el DNI del cliente"
+                    required onchange="validarDNI(this.value)">
+                <div id="dni-feedback" class="invalid-feedback"></div>
             </div>
+
 
             <!-- Campo para Nombre -->
             <div class="form-group">
@@ -84,6 +91,7 @@
                 <!-- Las filas se agregarán dinámicamente aquí -->
             </tbody>
         </table>
+        <div id="producto-feedback" class="invalid-feedback d-block"></div>
         <button type="button" class="btn btn-secondary" onclick="agregarFilaProducto()">Agregar Producto</button>
     </form>
 </div>
@@ -104,9 +112,7 @@
     document.getElementById("ruc_empresa").innerText = "{{ empresa.ruc }}";
     document.getElementById("direccion_empresa").innerText = "{{ empresa.direccion }}";
     document.getElementById("telefono_empresa").innerText = "{{ empresa.telefono }}";
-    {% if empresa.imagen %}
-    document.getElementById("imagen_empresa").src = "{{ empresa.imagen.url }}";
-    {% endif %}
+
 
 
     function buscarClientePorDNI(dni) {
@@ -131,17 +137,83 @@
     }
 
     function validarDNI(dni) {
-        var dniRegExp = /^[0-9]{8}$/; 
+        const dniField = document.getElementById("dni");
+        const feedback = document.getElementById("dni-feedback");
+        const dniRegExp = /^[0-9]{8}$/;
+
         if (!dniRegExp.test(dni)) {
-            alert("El DNI debe contener solo 8 números.");
-            document.getElementById("dni").value = ""; 
-        } else {
-            buscarClientePorDNI(dni); 
+            dniField.classList.add("is-invalid");
+            feedback.textContent = "El DNI debe contener exactamente 8 números.";
+            dniField.value = "";
+            return;
         }
+
+        // Si el DNI es válido pero el cliente no existe
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: 'dni=' + encodeURIComponent(dni)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                dniField.classList.add("is-invalid");
+                feedback.textContent = "Cliente no encontrado con ese DNI.";
+            } else {
+                dniField.classList.remove("is-invalid");
+                feedback.textContent = "";
+                document.getElementById("nombre").value = data.nombre;
+                document.getElementById("direccion").value = data.direccion;
+                document.getElementById("telefono").value = data.telefono;
+                document.getElementById("correo").value = data.correo;
+            }
+        })
+        .catch(error => {
+            dniField.classList.add("is-invalid");
+            feedback.textContent = "Error al verificar el cliente.";
+        });
     }
+
+
     function actualizarProducto(selectElement) {
-        var codigoProducto = selectElement.value;
-        var row = selectElement.closest('tr');
+        const codigoProducto = selectElement.value;
+
+        // Verificar si ya fue seleccionado en otra fila
+        const allSelects = document.querySelectorAll(".codigo_producto");
+        let repetido = 0;
+
+        allSelects.forEach(sel => {
+            if (sel.value === codigoProducto) repetido++;
+        });
+
+        if (repetido > 1) {
+            // Vaciar el campo y marcar como inválido visualmente
+            selectElement.value = "";
+            selectElement.classList.add("is-invalid");
+
+            const feedback = document.createElement("div");
+            feedback.className = "invalid-feedback";
+            feedback.textContent = "Este producto ya fue agregado.";
+
+            // Evita múltiples mensajes
+            if (!selectElement.parentNode.querySelector(".invalid-feedback")) {
+                selectElement.parentNode.appendChild(feedback);
+            }
+
+            return;
+        } else {
+            // Si es válido, quitar clase de error si existía
+            selectElement.classList.remove("is-invalid");
+            const feedback = selectElement.parentNode.querySelector(".invalid-feedback");
+            if (feedback) {
+                feedback.remove();
+            }
+        }
+
+        const row = selectElement.closest('tr');
 
         fetch('', {
             method: 'POST',
@@ -153,19 +225,21 @@
         })
         .then(response => response.json())
         .then(data => {
-            // Actualizar campos de la fila con los datos del producto
+            if (!data.nombre) {
+                row.querySelector(".nombre_producto").value = "";
+                row.querySelector(".precio_unitario").value = "";
+                row.querySelector(".subtotal_producto").value = "0.00";
+                selectElement.classList.add("is-invalid");
+                return;
+            }
+
             row.querySelector(".nombre_producto").value = data.nombre;
             row.querySelector(".precio_unitario").value = data.precio;
-
-            // Llamar a la función para actualizar el subtotal
             actualizarSubtotal(row);
-
-            calcularTotales(); // Llama a la función para calcular los totales
+            calcularTotales();
         })
-        .catch(error => {
-            console.error('Error:', error);
-        });
     }
+
 
     function actualizarSubtotal(row) {
         var precioUnitario = parseFloat(row.querySelector(".precio_unitario").value);
@@ -199,10 +273,7 @@
     // Función para generar la factura en formato HTML
     function guardarFactura() {
         var total = parseFloat(document.getElementById("total_pagar").innerText);
-        if (isNaN(total) || total <= 0) {
-            alert("No se puede generar una factura con total cero.");
-            return;
-        }
+
         var cliente = obtenerDatosCliente();
         console.log(cliente);
         var productos = obtenerProductos();
@@ -214,6 +285,28 @@
             productos: productos,
             extraData: extraData
         };
+
+        if (cliente.nombre === "" || cliente.direccion === "" || cliente.telefono === "") {
+            document.getElementById("dni-feedback").textContent = "Debe ingresar un DNI válido de un cliente existente.";
+            document.getElementById("dni").classList.add("is-invalid");
+            return;
+        } else {
+            document.getElementById("dni-feedback").textContent = "";
+            document.getElementById("dni").classList.remove("is-invalid");
+        }
+
+        if (productos.length === 0) {
+            document.getElementById("producto-feedback").textContent = "Debe agregar al menos un producto.";
+            return;
+        } else {
+            document.getElementById("producto-feedback").textContent = "";
+        }
+        if (isNaN(total) || total <= 0) {
+            document.getElementById("producto-feedback").textContent = "No se puede generar una factura con total cero.";
+            return;
+        } else {
+            document.getElementById("producto-feedback").textContent = ""; // Limpiar si no hay error
+        }
 
         // Enviar los datos al servidor mediante una solicitud fetch
         fetch('/modulo/guardar_factura/', {
@@ -231,16 +324,19 @@
             } else {
                 // Si hay un error, mostrar un mensaje de error
                 console.error('Error al guardar la factura:', response.statusText);
-                // Puedes mostrar un mensaje de error al usuario si lo deseas
+                document.getElementById("producto-feedback").textContent = "No se pudo generar la factura. Verifica los datos.";
             }
         })
         .then(data => {
-            // Mostrar la factura generada
-            mostrarFactura(data);
+            if (data && data.numero_factura) {
+                window.location.href = "/modulo/busqueda/";
+            } else {
+                document.getElementById("producto-feedback").textContent = "No se pudo generar la factura. Verifica los datos.";
+            }
         })
         .catch(error => {
             console.error('Error al procesar la solicitud:', error);
-            // Puedes mostrar un mensaje de error al usuario si lo deseas
+            document.getElementById("producto-feedback").textContent = "Error de red o del servidor.";
         });
     }
 
@@ -283,34 +379,50 @@
         };
     }    
 
-function obtenerProductos() {
-    var productos = [];
-    var filas = document.querySelectorAll("#productosTable tbody tr");
-    
-    filas.forEach(function(fila) {
-        var producto = {
-            codigo: fila.querySelector(".codigo_producto").value,
-            nombre: fila.querySelector(".nombre_producto").value,
-            precio_unitario: parseFloat(fila.querySelector(".precio_unitario").value),
-            cantidad: parseInt(fila.querySelector(".cantidad_producto").value),
-            subtotal: parseFloat(fila.querySelector(".subtotal_producto").value)
-        };
+    function obtenerProductos() {
+        var productos = [];
+        var filas = document.querySelectorAll("#productosTable tbody tr");
 
-        if (producto.cantidad <= 0 || isNaN(producto.cantidad)) {
-            alert("Todas las cantidades deben ser mayores a 0.");
+        let hayError = false;
+        let feedbackDiv = document.getElementById("producto-feedback");
+        feedbackDiv.textContent = "";  // Limpiar mensaje previo
+
+        filas.forEach(function(fila) {
+            var codigo = fila.querySelector(".codigo_producto").value;
+            var nombre = fila.querySelector(".nombre_producto").value;
+            var precio = parseFloat(fila.querySelector(".precio_unitario").value);
+            var cantidad = parseInt(fila.querySelector(".cantidad_producto").value);
+            var subtotal = parseFloat(fila.querySelector(".subtotal_producto").value);
+
+            if (isNaN(cantidad) || cantidad <= 0 || cantidad > 9999) {
+                fila.querySelector(".cantidad_producto").classList.add("is-invalid");
+                hayError = true;
+            } else {
+                fila.querySelector(".cantidad_producto").classList.remove("is-invalid");
+            }
+
+            productos.push({
+                codigo: codigo,
+                nombre: nombre,
+                precio_unitario: precio,
+                cantidad: cantidad,
+                subtotal: subtotal
+            });
+        });
+
+        if (hayError) {
+            feedbackDiv.textContent = "Todas las cantidades deben ser mayores a 0 y menores a 10,000.";
             throw new Error("Cantidad inválida.");
         }
 
-        productos.push(producto);
-    });
+        if (productos.length === 0) {
+            feedbackDiv.textContent = "Debe ingresar al menos un producto.";
+            throw new Error("Factura sin productos.");
+        }
 
-    if (productos.length === 0) {
-        alert("Debe ingresar al menos un producto.");
-        throw new Error("Factura sin productos.");
+        return productos;
     }
 
-    return productos;
-}
 
 
     function obtenerDatosExtra() {
@@ -320,6 +432,13 @@ function obtenerProductos() {
             total_pagar: parseFloat(document.getElementById("total_pagar").innerText)
         };
     }
+
+    function eliminarFilaProducto(button) {
+        var row = button.closest('tr');
+        row.remove();
+        calcularTotales();
+    }
+
 
     function agregarFilaProducto() {
         var newRow = '<tr>' +
@@ -335,6 +454,7 @@ function obtenerProductos() {
             '<td><input type="text" class="form-control precio_unitario" name="precio_unitario" readonly></td>' +
             '<td><input type="number" class="form-control cantidad_producto" name="cantidad_producto" value="1" min="1" onchange="actualizarSubtotal(this.parentNode.parentNode); calcularTotales();"></td>' +
             '<td><input type="text" class="form-control subtotal_producto" name="subtotal_producto" readonly></td>' +
+            '<td><button type="button" class="btn btn-danger btn-sm" onclick="eliminarFilaProducto(this)">Eliminar</button></td>' +
             '</tr>';
         $('#productosTable tbody').append(newRow);
     }

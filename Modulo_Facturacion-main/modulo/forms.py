@@ -1,10 +1,19 @@
 from django import forms
 from .models import Cliente, Empresa, Producto
+import re
 
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ['dni', 'nombre', 'direccion', 'telefono', 'correo']
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre', '').strip()
+        if not nombre:
+            raise forms.ValidationError("El nombre es obligatorio.")
+        if len(nombre) > 100:
+            raise forms.ValidationError("El nombre no puede superar 100 caracteres.")
+        return nombre
 
     def clean_dni(self):
         dni = self.cleaned_data['dni']
@@ -17,6 +26,15 @@ class ClienteForm(forms.ModelForm):
         if telefono and (not telefono.isdigit() or len(telefono) != 9):
             raise forms.ValidationError("El teléfono debe tener exactamente 9 dígitos numéricos.")
         return telefono
+    
+    def clean_correo(self):
+        correo = self.cleaned_data.get('correo')
+        if correo:
+            # Usa validator o regex simple
+            if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', correo):
+                raise forms.ValidationError("Ingrese un correo electrónico válido.")
+        return correo
+
 
 class ProductoForm(forms.ModelForm):
     class Meta:
@@ -28,6 +46,12 @@ class ProductoForm(forms.ModelForm):
         if precio <= 0 or precio > 10000:
             raise forms.ValidationError("El precio debe ser mayor a 0 y razonable (máx. 10,000).")
         return precio
+    
+    def clean_codigo(self):
+        codigo = self.cleaned_data.get('codigo')
+        if not re.match(r'^\d+$', codigo):
+            raise forms.ValidationError("El código del producto debe contener solo números.")
+        return codigo
 
     def clean_stock(self):
         stock = self.cleaned_data['stock']

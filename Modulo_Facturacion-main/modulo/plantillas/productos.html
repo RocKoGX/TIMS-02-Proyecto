@@ -2,6 +2,14 @@
 
 {% block content %}
 <h1>Gestión de Productos</h1>
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %} mt-3" role="alert">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
 <p>Aquí puedes agregar, editar y eliminar productos o servicios, así como establecer precios y categorías.</p>
 <div class="container">
     <div class="row">
@@ -12,26 +20,26 @@
                 {{ form.non_field_errors }}
                 <div class="form-group">
                     <label for="productCodigo">Código del producto</label>
-                    <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ingresa el código del producto"
-                           value="{{ form.codigo.value }}" pattern="\d+" title="Solo se permiten números" onblur="autocompletarProducto()" required>
+                    <input type="text" class="form-control" id="codigo" name="codigo" maxlength="10" placeholder="Ingresa el código del producto" value="{{ form.codigo.value|default_if_none:'' }}">
+                           <div id="codigo-feedback" class="invalid-feedback d-block"></div>
                 </div>
                 <div class="form-group">
                     <label for="productName">Nombre del producto</label>
-                    <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ingresa el nombre del producto"
-                           value="{{ form.nombre.value }}" required maxlength="50">
-                    <!-- Se establece el límite de caracteres a 50 -->
+                    <input type="text" class="form-control" id="nombre" name="nombre" maxlength="50" placeholder="Ingresa el nombre del producto" value="{{ form.nombre.value|default_if_none:'' }}">
+                           <div id="nombre-feedback" class="invalid-feedback d-block"></div>
+                    
                 </div>
                 <div class="form-group">
                     <label for="productPrice">Precio del producto</label>
-                    <input type="text" class="form-control" id="precio" name="precio" placeholder="Ingresa el precio del producto"
-                           value="{{ form.precio.value }}" required oninput="limitarCaracteres(this, 6)">
-                    <!-- Se establece el límite de caracteres a 10 -->
+                    <input type="number" class="form-control" id="precio" name="precio" placeholder="Ingresa el precio del producto" value="{{ form.precio.value|default_if_none:'' }}">
+                           <div id="precio-feedback" class="invalid-feedback d-block"></div>
+                    
                 </div>
                 <div class="form-group">
                     <label for="productStock">Stock del producto</label>
-                    <input type="text" class="form-control" id="stock" name="stock" placeholder="Ingresa el stock del producto"
-                           value="{{ form.stock.value }}" required oninput="limitarCaracteres(this, 6)">
-                    <!-- Se establece el límite de caracteres a 10 -->
+                    <input type="number" class="form-control" id="stock" name="stock" placeholder="Ingresa el stock del producto" value="{{ form.stock.value|default_if_none:'' }}">
+                           <div id="stock-feedback" class="invalid-feedback d-block"></div>
+                    
                 </div>
                 {% if editar_producto %}
                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
@@ -73,33 +81,59 @@
 
 <script>
 function validarFormulario() {
-    const codigo = document.getElementById('codigo').value.trim();
-    const nombre = document.getElementById('nombre').value.trim();
-    const precio = parseFloat(document.getElementById('precio').value.trim());
-    const stock = parseInt(document.getElementById('stock').value.trim());
+    let esValido = true;
 
-    if (!/^\d+$/.test(codigo)) {
-        alert('El código del producto solo debe contener números.');
+    const codigo = document.getElementById('codigo');
+    const nombre = document.getElementById('nombre');
+    const precio = document.getElementById('precio');
+    const stock = document.getElementById('stock');
+
+    // Limpiar mensajes anteriores
+    ["codigo", "nombre", "precio", "stock"].forEach(id => {
+        document.getElementById(id + '-feedback').textContent = "";
+        document.getElementById(id).classList.remove("is-invalid");
+    });
+
+    if (!/^\d+$/.test(codigo.value.trim())) {
+        document.getElementById("codigo-feedback").textContent = "El código del producto solo debe contener números.";
+        codigo.classList.add("is-invalid");
+        esValido = false;
+    }
+
+    if (codigo.length > 10) {
+        mostrarError("El código no debe tener más de 10 dígitos.");
         return false;
     }
 
-    if (codigo === "" || nombre === "" || isNaN(precio) || isNaN(stock)) {
-        alert('Todos los campos son obligatorios.');
-        return false;
+    if (codigo.value.trim() === "") {
+        document.getElementById("codigo-feedback").textContent = "El campo código es obligatorio.";
+        codigo.classList.add("is-invalid");
+        esValido = false;
     }
 
-    if (precio <= 0 || precio > 10000) {
-        alert('El precio debe ser mayor a 0 y menor a 10,000.');
-        return false;
+    if (nombre.value.trim() === "") {
+        document.getElementById("nombre-feedback").textContent = "El nombre del producto es obligatorio.";
+        nombre.classList.add("is-invalid");
+        esValido = false;
     }
 
-    if (stock <= 0 || stock > 1000) {
-        alert('El stock debe ser mayor a 0 y menor o igual a 1000.');
-        return false;
+    const precioNum = parseFloat(precio.value.trim());
+    if (isNaN(precioNum) || precioNum <= 0 || precioNum > 10000) {
+        document.getElementById("precio-feedback").textContent = "El precio debe ser mayor a 0 y menor a 10,000.";
+        precio.classList.add("is-invalid");
+        esValido = false;
     }
 
-    return true;
+    const stockNum = parseInt(stock.value.trim());
+    if (isNaN(stockNum) || stockNum <= 0 || stockNum > 1000) {
+        document.getElementById("stock-feedback").textContent = "El stock debe ser mayor a 0 y menor o igual a 1000.";
+        stock.classList.add("is-invalid");
+        esValido = false;
+    }
+
+    return esValido;
 }
+
 
 function limitarCaracteres(input, maxLength) {
     if (input.value.length > maxLength) {
